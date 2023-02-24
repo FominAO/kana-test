@@ -70,6 +70,7 @@
             },
             "git": {
                 "outputPath": "docs/",
+                "baseHref": "https://fominao.github.io/kana-test/",
                 "budgets": [
                   {
                     "type": "initial",
