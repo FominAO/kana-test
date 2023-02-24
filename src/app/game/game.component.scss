@@ -1,0 +1,19 @@
+h3 {
+    text-align: center;
+}
+.counter {
+    text-align: center;
+}
+.container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    .current-kana {
+        font-size: 140px;
+        font-family: 'Times New Roman', Times, serif;
+    }
+    .current-typing {
+        font-size: 22px;
+        color: grey;
+    }
+}

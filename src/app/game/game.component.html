@@ -1,0 +1,17 @@
+<h3>Game</h3>
+<button (click)="startNewGame()">Reset</button>
+<div class="counter">
+    <div>Kanas left: {{queue.length}}</div> </div>
+    <div>Score: {{score}}</div>
+<div class="container">
+    <div class="current-kana"
+        [@correct]="nextKanaSubject | async"
+        (@correct.done)="onCorrectAnimationDone($event)"
+        [@incorrect]="incorrectSubject | async"
+        (@incorrect.done)="onIncorrectAnimationDone($event)">
+        {{currentKana}}
+    </div>
+    <div class="current-typing">
+        {{currentTyping}}
+    </div>
+</div>

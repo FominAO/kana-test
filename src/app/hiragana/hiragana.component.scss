@@ -1,0 +1,8 @@
+.kana-alphabet {
+    display: grid;
+    grid-template-columns: repeat(11, 20px);
+    column-width: fit-content;
+    .sylible {
+        width: fit-content;
+    }
+}

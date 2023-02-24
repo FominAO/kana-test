@@ -1,0 +1,1 @@
+export type Alphabet = 'katakana' | 'hiragana' | 'kanji';
