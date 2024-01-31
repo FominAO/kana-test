@@ -1,7 +1,15 @@
 <h2>Kana Transcription Test</h2>
 
 <div class="controls">
-    <button class="start-button" routerLink="game">Start</button>
+    <div class="select">
+        <label for="alphabet-select">Alphabet </label>
+        <select [(ngModel)]="selectedAlphabet" name="alphabet" id="alphabet-select">
+            <option value="katakana">Katakana</option>
+            <option value="hiragana">Hiragana</option>
+            <option value="katakana">Kanji (soon)</option>
+        </select>
+    </div>
+    <button class="start-button" [routerLink]="getLink()">Start</button>
     <button class="start-button" routerLink="">Home</button>
 </div>
 

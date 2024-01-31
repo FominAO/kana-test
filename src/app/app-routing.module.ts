@@ -8,7 +8,7 @@ const routes: Routes = [
         component: HiraganaComponent
     },
     {
-        path: 'game',
+        path: 'game/:id',
         loadChildren: () => import('./game/game.module').then(m => m.GameModule)
     }
 ];
