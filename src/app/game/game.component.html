@@ -1,7 +1,7 @@
 <h3>Game</h3>
 <button (click)="startNewGame()">Reset</button>
 <div class="counter">
-    <div>Kanas left: {{queue.length}}</div> </div>
+    <div>Kanas left: {{queue.length}} <button (click)="onHint()">Hint</button><span>{{hint}}</span></div> </div>
     <div>Score: {{score}}</div>
 <div class="container">
     <div class="current-kana"

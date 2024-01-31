@@ -1,12 +1,14 @@
 import { Component, Inject, OnDestroy, OnInit } from '@angular/core';
-import { DOCUMENT } from '@angular/common';
-import { hiraganaTranscription, katakanaTranscription } from '../kana/kana';
 import { animate, state, style, transition, trigger } from '@angular/animations';
 import { BehaviorSubject, Observable, Subject, Subscription, timer } from 'rxjs';
 import { filter, tap } from 'rxjs/operators'
 import { GlobalEventsService } from '../services/global-events.service';
-import { Alphabet } from '../kana/type';
+import { Alphabet, AlphabetType } from '../kana/type';
 import { shuffleArray } from 'src/utils/shuffle-array';
+import { armenianAlphabet } from '../kana/armenian';
+import { hiraganaAlphabet } from '../kana/hiragana';
+import { katakanaAlphabet } from '../kana/katakana';
+import { ActivatedRoute, ActivatedRouteSnapshot } from '@angular/router';
 
 @Component({
   selector: 'app-game',
@@ -58,7 +60,7 @@ import { shuffleArray } from 'src/utils/shuffle-array';
   ]
 })
 export class GameComponent implements OnInit, OnDestroy {
-    alphabets: Array<Alphabet> = ['hiragana']
+    alphabets: Array<AlphabetType> = [];
 
     keyPressed$: Observable<KeyboardEvent>;
 
@@ -69,6 +71,7 @@ export class GameComponent implements OnInit, OnDestroy {
     isMissed = false;
     lastCorrectTime = 0;
     score = 0;
+    hint = '';
 
     vacabulary:{[key: string]: string} = {}
 
@@ -77,8 +80,13 @@ export class GameComponent implements OnInit, OnDestroy {
 
     subscriptions: Subscription[] = [];
 
-  constructor(private eventsService: GlobalEventsService) {
+  constructor(private eventsService: GlobalEventsService, private readonly activatedRoute: ActivatedRoute) {
     this.keyPressed$ = this.eventsService.getKeyPressedObservable();
+
+    this.activatedRoute.params.subscribe(e => console.log(e)
+    )
+
+    this.alphabets = [this.activatedRoute.snapshot.params.alph]; 
   }
 
   createVacabulary() {
@@ -87,13 +95,18 @@ export class GameComponent implements OnInit, OnDestroy {
     this.alphabets.forEach(alphabet => {
         switch (alphabet) {
             case 'hiragana':
-                vocab = {...this.vacabulary, ...hiraganaTranscription}
+                vocab = {...vocab, ...(new Alphabet(hiraganaAlphabet).getAllTranscriptions())};
                 break;
             case 'katakana':
-                vocab = {...this.vacabulary, ...katakanaTranscription}
+                vocab = {...vocab, ...(new Alphabet(katakanaAlphabet).getAllTranscriptions())};
                 break;
-        
+            case 'armenian':
+                vocab = {...vocab, ...(new Alphabet(armenianAlphabet).getAllTranscriptions())}
+                break;
             default:
+                if (Object.keys(vocab).length === 0) {
+                    console.warn(`No matches for alphabet "${alphabet}"`);
+                }
                 break;
         }
     });
@@ -121,11 +134,15 @@ export class GameComponent implements OnInit, OnDestroy {
           this.incorrectSubject.next('false');
       }
   }
+  onHint() {
+    this.hint = this.vacabulary[this.currentKana];
+  }
 
   nextKana() {
     if (this.currentKana) {
         this.setScore();
     }
+    this.hint = '';
     this.clearTyping();
     this.currentKana = this.queue.pop() || '';
     if (this.currentKana === '') {
