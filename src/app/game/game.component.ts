@@ -5,8 +5,9 @@ import { animate, state, style, transition, trigger } from '@angular/animations'
 import { BehaviorSubject, Observable, Subject, Subscription, timer } from 'rxjs';
 import { filter, tap } from 'rxjs/operators'
 import { GlobalEventsService } from '../services/global-events.service';
-import { Alphabet } from '../kana/type';
+import { Alphabet, AlphabetType } from '../kana/type';
 import { shuffleArray } from 'src/utils/shuffle-array';
+import { armenianAlphabet } from '../kana/armenian';
 
 @Component({
   selector: 'app-game',
@@ -58,7 +59,7 @@ import { shuffleArray } from 'src/utils/shuffle-array';
   ]
 })
 export class GameComponent implements OnInit, OnDestroy {
-    alphabets: Array<Alphabet> = ['hiragana']
+    alphabets: Array<AlphabetType> = ['armenian']
 
     keyPressed$: Observable<KeyboardEvent>;
 
@@ -69,6 +70,7 @@ export class GameComponent implements OnInit, OnDestroy {
     isMissed = false;
     lastCorrectTime = 0;
     score = 0;
+    hint = '';
 
     vacabulary:{[key: string]: string} = {}
 
@@ -92,7 +94,11 @@ export class GameComponent implements OnInit, OnDestroy {
             case 'katakana':
                 vocab = {...this.vacabulary, ...katakanaTranscription}
                 break;
-        
+            case 'armenian':
+                const arm = new Alphabet(armenianAlphabet).getAllTranscriptions();
+
+                vocab = {...this.vacabulary, ...arm}
+                break;
             default:
                 break;
         }
@@ -121,11 +127,15 @@ export class GameComponent implements OnInit, OnDestroy {
           this.incorrectSubject.next('false');
       }
   }
+  onHint() {
+    this.hint = this.vacabulary[this.currentKana];
+  }
 
   nextKana() {
     if (this.currentKana) {
         this.setScore();
     }
+    this.hint = '';
     this.clearTyping();
     this.currentKana = this.queue.pop() || '';
     if (this.currentKana === '') {
