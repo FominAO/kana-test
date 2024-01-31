@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
-import { Router } from '@angular/router';
-import { Alphabet } from './kana/type';
+import { ActivatedRoute, Router } from '@angular/router';
+import { AlphabetType } from './kana/type';
 
 @Component({
   selector: 'app-root',
@@ -9,9 +9,10 @@ import { Alphabet } from './kana/type';
 })
 export class AppComponent {
   title = 'kana-test';
-  selectedAlphabet: Alphabet = 'hiragana';
+  selectedAlphabet: AlphabetType = 'hiragana';
 
-  constructor(private readonly router: Router) {}
+  constructor(private readonly route: ActivatedRoute) {
+  }
 
   getLink():string {
     return `game/${this.selectedAlphabet}`

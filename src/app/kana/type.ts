@@ -15,8 +15,6 @@ export class Alphabet {
 
     constructor(alph: AlphabetConstructorElem[]) {
         this.init(alph);
-        console.log(this.dictionary);
-        
     }
     init(alph: AlphabetConstructorElem[]) {
         alph.forEach(letter => {

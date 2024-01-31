@@ -1,6 +1,4 @@
 import { Component, Inject, OnDestroy, OnInit } from '@angular/core';
-import { DOCUMENT } from '@angular/common';
-import { hiraganaTranscription, katakanaTranscription } from '../kana/kana';
 import { animate, state, style, transition, trigger } from '@angular/animations';
 import { BehaviorSubject, Observable, Subject, Subscription, timer } from 'rxjs';
 import { filter, tap } from 'rxjs/operators'
@@ -8,6 +6,9 @@ import { GlobalEventsService } from '../services/global-events.service';
 import { Alphabet, AlphabetType } from '../kana/type';
 import { shuffleArray } from 'src/utils/shuffle-array';
 import { armenianAlphabet } from '../kana/armenian';
+import { hiraganaAlphabet } from '../kana/hiragana';
+import { katakanaAlphabet } from '../kana/katakana';
+import { ActivatedRoute, ActivatedRouteSnapshot } from '@angular/router';
 
 @Component({
   selector: 'app-game',
@@ -59,7 +60,7 @@ import { armenianAlphabet } from '../kana/armenian';
   ]
 })
 export class GameComponent implements OnInit, OnDestroy {
-    alphabets: Array<AlphabetType> = ['armenian']
+    alphabets: Array<AlphabetType> = [];
 
     keyPressed$: Observable<KeyboardEvent>;
 
@@ -79,8 +80,13 @@ export class GameComponent implements OnInit, OnDestroy {
 
     subscriptions: Subscription[] = [];
 
-  constructor(private eventsService: GlobalEventsService) {
+  constructor(private eventsService: GlobalEventsService, private readonly activatedRoute: ActivatedRoute) {
     this.keyPressed$ = this.eventsService.getKeyPressedObservable();
+
+    this.activatedRoute.params.subscribe(e => console.log(e)
+    )
+
+    this.alphabets = [this.activatedRoute.snapshot.params.alph]; 
   }
 
   createVacabulary() {
@@ -89,17 +95,18 @@ export class GameComponent implements OnInit, OnDestroy {
     this.alphabets.forEach(alphabet => {
         switch (alphabet) {
             case 'hiragana':
-                vocab = {...this.vacabulary, ...hiraganaTranscription}
+                vocab = {...vocab, ...(new Alphabet(hiraganaAlphabet).getAllTranscriptions())};
                 break;
             case 'katakana':
-                vocab = {...this.vacabulary, ...katakanaTranscription}
+                vocab = {...vocab, ...(new Alphabet(katakanaAlphabet).getAllTranscriptions())};
                 break;
             case 'armenian':
-                const arm = new Alphabet(armenianAlphabet).getAllTranscriptions();
-
-                vocab = {...this.vacabulary, ...arm}
+                vocab = {...vocab, ...(new Alphabet(armenianAlphabet).getAllTranscriptions())}
                 break;
             default:
+                if (Object.keys(vocab).length === 0) {
+                    console.warn(`No matches for alphabet "${alphabet}"`);
+                }
                 break;
         }
     });
