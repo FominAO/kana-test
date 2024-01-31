@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { GameComponent } from './game.component';
 import { GameRoutingModule } from './game-routing.module';
 import { Route, RouterModule } from '@angular/router';
+import { FormsModule } from '@angular/forms';
 
 const routes: Route[] = [
   {
@@ -17,6 +18,7 @@ const routes: Route[] = [
   ],
   imports: [
     CommonModule,
+    FormsModule,
     RouterModule.forChild(routes),
     GameRoutingModule
   ]

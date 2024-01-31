@@ -1,17 +1,33 @@
+<div></div>
 <h3>Game</h3>
-<button (click)="startNewGame()">Reset</button>
-<div class="counter">
-    <div>Kanas left: {{queue.length}} <button (click)="onHint()">Hint</button><span>{{hint}}</span></div> </div>
-    <div>Score: {{score}}</div>
-<div class="container">
-    <div class="current-kana"
-        [@correct]="nextKanaSubject | async"
-        (@correct.done)="onCorrectAnimationDone($event)"
-        [@incorrect]="incorrectSubject | async"
-        (@incorrect.done)="onIncorrectAnimationDone($event)">
-        {{currentKana}}
-    </div>
-    <div class="current-typing">
-        {{currentTyping}}
-    </div>
+<div *ngIf="supportsTouch" class="mobile">
+  <input
+    placeholder="Tap to open keyboard"
+    type="text"
+    autocapitalize="off"
+    (input)="onMobileInputChange($event)"
+  />
 </div>
+<div class="container">
+    <div class="current-typing">
+        {{ currentTyping }}
+      </div>
+  <div
+    class="current-kana"
+    [@correct]="nextKanaSubject | async"
+    (@correct.done)="onCorrectAnimationDone($event)"
+    [@incorrect]="incorrectSubject | async"
+    (@incorrect.done)="onIncorrectAnimationDone($event)"
+  >
+    {{ currentKana }}
+  </div>
+
+</div>
+<div class="counter">
+    <div>
+      Kanas left: {{ queue.length }} <button (click)="onHint()">Hint</button
+      ><span>{{ hint }}</span>
+    </div>
+  </div>
+  <div>Score: {{ score }}</div>
+  <button (click)="startNewGame()">Reset</button>

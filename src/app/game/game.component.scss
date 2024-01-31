@@ -12,8 +12,19 @@ h3 {
         font-size: 140px;
         font-family: 'Times New Roman', Times, serif;
     }
-    .current-typing {
-        font-size: 22px;
-        color: grey;
-    }
+}
+.current-typing {
+    font-size: 22px;
+    color: grey;
+    min-height: 26px;
+}
+.mobile {
+    display: flex;
+    justify-content: center;
+}
+.mobile input {
+    border: none;
+    outline: none;
+    text-align: center;
+    caret-color: transparent;
 }

@@ -1,7 +1,7 @@
 import { Component, Inject, OnDestroy, OnInit } from '@angular/core';
 import { animate, state, style, transition, trigger } from '@angular/animations';
-import { BehaviorSubject, Observable, Subject, Subscription, timer } from 'rxjs';
-import { filter, tap } from 'rxjs/operators'
+import { BehaviorSubject, Observable, Subject, Subscription, combineLatest, of, timer } from 'rxjs';
+import { filter, map, tap } from 'rxjs/operators'
 import { GlobalEventsService } from '../services/global-events.service';
 import { Alphabet, AlphabetType } from '../kana/type';
 import { shuffleArray } from 'src/utils/shuffle-array';
@@ -77,16 +77,28 @@ export class GameComponent implements OnInit, OnDestroy {
 
     nextKanaSubject = new BehaviorSubject('false');
     incorrectSubject = new BehaviorSubject('false');
+    supportsTouch = false;
 
     subscriptions: Subscription[] = [];
+    mobileKeyPressed$: BehaviorSubject<any> = new BehaviorSubject(null);
 
   constructor(private eventsService: GlobalEventsService, private readonly activatedRoute: ActivatedRoute) {
-    this.keyPressed$ = this.eventsService.getKeyPressedObservable();
-
-    this.activatedRoute.params.subscribe(e => console.log(e)
-    )
+    this.supportsTouch = 'ontouchstart' in window || (navigator as any).msMaxTouchPoints;
+    this.keyPressed$ = this.eventsService.getKeyPressedObservable()
+    this.activatedRoute.params.subscribe(e => console.log(e));
 
     this.alphabets = [this.activatedRoute.snapshot.params.alph]; 
+  }
+
+  onMobileInputChange(e: Event) {
+    console.log(e);
+    e.preventDefault();
+    e.stopPropagation();
+
+    const letter = (e.target as HTMLInputElement).value.slice(-1);
+
+    this.mobileKeyPressed$.next({key: letter} as unknown as KeyboardEvent);
+    (e.target as HTMLInputElement).value = ''
   }
 
   createVacabulary() {
@@ -116,10 +128,11 @@ export class GameComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     const keyPressedSubscription = this.keyPressed$.subscribe(e => this.onKeyPressed(e.key));
+    const mobileKeyPressedSubscription = this.mobileKeyPressed$.pipe(filter(e => !!e)).subscribe(e => this.onKeyPressed(e.key));
     const nextKanaSubscription = this.nextKanaSubject.pipe(filter(e => e === 'false'))
         .subscribe(() => this.nextKana());
 
-    this.subscriptions.push(keyPressedSubscription, nextKanaSubscription);
+    this.subscriptions.push(keyPressedSubscription, nextKanaSubscription, mobileKeyPressedSubscription);
     this.startNewGame();
   }
 
@@ -156,7 +169,7 @@ export class GameComponent implements OnInit, OnDestroy {
     let timestamp = (+(new Date()) - this.lastCorrectTime) / 1000;
     let timescore = Math.round(1000 - (timestamp > 5 ? 1000 : timestamp * 200));
     // to 1 s - 1000
-    this.score += (250 + timescore) * multiplier
+    this.score += (250 + timescore) * multiplier;
     this.isMissed = false;
     this.lastCorrectTime = +new Date();
   }
@@ -193,7 +206,7 @@ export class GameComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
-    this.subscriptions.forEach(s => s.unsubscribe())
+    this.subscriptions.forEach(s => s.unsubscribe());
   }
 
 }
