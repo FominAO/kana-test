@@ -12,54 +12,41 @@ import { ActivatedRoute, ActivatedRouteSnapshot } from '@angular/router';
 import { correctAnimation, incorrectAnimation } from '../animations';
 
 @Component({
-  selector: 'app-game',
-  templateUrl: './game.component.html',
-  styleUrls: ['./game.component.scss'],
+  selector: 'app-learn',
+  templateUrl: './learn.component.html',
+  styleUrls: ['./learn.component.scss'],
   animations: [
     correctAnimation,
     incorrectAnimation,
   ]
 })
-export class GameComponent implements OnInit, OnDestroy {
+export class LearnComponent implements OnInit, OnDestroy {
     alphabets: Array<AlphabetType> = [];
 
-    keyPressed$: Observable<KeyboardEvent>;
-
-    currentTyping: string = '';
     currentKana: string = '';
+    currentSymbol = new BehaviorSubject({
+      kana: '',
+      transcription: ''
+    });
+    currentOptions = this.currentSymbol.pipe(map(symbol => this.getOptions(symbol)))
     expectedTranscription: string = '';
+    expectedKana: string = '';
     queue: string[] = [];
     isMissed = false;
     lastCorrectTime = 0;
     score = 0;
-    hint = '';
 
     vacabulary:{[key: string]: string} = {}
 
-    nextKanaSubject = new BehaviorSubject('false');
-    incorrectSubject = new BehaviorSubject('false');
+    correctAnimationSubject = new BehaviorSubject('false');
+    incorrectAnimationSubject = new BehaviorSubject('false');
     supportsTouch = false;
 
     subscriptions: Subscription[] = [];
     mobileKeyPressed$: BehaviorSubject<any> = new BehaviorSubject(null);
 
   constructor(private eventsService: GlobalEventsService, private readonly activatedRoute: ActivatedRoute) {
-    this.supportsTouch = 'ontouchstart' in window || (navigator as any).msMaxTouchPoints;
-    this.keyPressed$ = this.eventsService.getKeyPressedObservable()
-    this.activatedRoute.params.subscribe(e => console.log(e));
-
     this.alphabets = [this.activatedRoute.snapshot.params.alph]; 
-  }
-
-  onMobileInputChange(e: Event) {
-    console.log(e);
-    e.preventDefault();
-    e.stopPropagation();
-
-    const letter = (e.target as HTMLInputElement).value.slice(-1);
-
-    this.mobileKeyPressed$.next({key: letter} as unknown as KeyboardEvent);
-    (e.target as HTMLInputElement).value = ''
   }
 
   createVacabulary() {
@@ -88,75 +75,65 @@ export class GameComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    const keyPressedSubscription = this.keyPressed$.subscribe(e => this.onKeyPressed(e.key));
-    const mobileKeyPressedSubscription = this.mobileKeyPressed$.pipe(filter(e => !!e)).subscribe(e => this.onKeyPressed(e.key));
-    const nextKanaSubscription = this.nextKanaSubject.pipe(filter(e => e === 'false'))
+
+    const nextKanaSubscription = this.correctAnimationSubject.pipe(filter(e => e === 'false'))
         .subscribe(() => this.nextKana());
 
-    this.subscriptions.push(keyPressedSubscription, nextKanaSubscription, mobileKeyPressedSubscription);
+    this.subscriptions.push(nextKanaSubscription);
     this.startNewGame();
   }
 
   onCorrectAnimationDone(e: any) {
       if (e.fromState === 'false') {
-          this.nextKanaSubject.next('false');
+          this.correctAnimationSubject.next('false');
       }
   }
 
   onIncorrectAnimationDone(e: any) {
       if (e.fromState === 'false') {
-          this.incorrectSubject.next('false');
+          this.incorrectAnimationSubject.next('false');
       }
   }
-  onHint() {
-    this.hint = this.vacabulary[this.currentKana];
+
+  onSelectKana(right: boolean) {
+    if (right) {
+      // this.correctAnimationSubject.next('true');
+      this.nextKana();
+    } else {
+      this.incorrectAnimationSubject.next('true');
+
+    }
   }
 
   nextKana() {
-    if (this.currentKana) {
-        this.setScore();
+    // if (this.currentKana) {
+    //     this.setScore();
+    // }
+    const currentKana = this.queue.pop() || '';
+
+    console.log(currentKana);
+    
+    if (currentKana === '') {
+      this.currentSymbol.next({kana: '', transcription: ''});
+      return;
     }
-    this.hint = '';
-    this.clearTyping();
-    this.currentKana = this.queue.pop() || '';
-    if (this.currentKana === '') {
-        return;
-    }
-    this.expectedTranscription = this.vacabulary[this.currentKana];
+    
+    this.currentSymbol.next({kana: currentKana, transcription: this.vacabulary[currentKana]});
   }
 
-  setScore() {
-    let multiplier = this.isMissed ? 1 : 2;
-    let timestamp = (+(new Date()) - this.lastCorrectTime) / 1000;
-    let timescore = Math.round(1000 - (timestamp > 5 ? 1000 : timestamp * 200));
-    // to 1 s - 1000
-    this.score += (250 + timescore) * multiplier;
-    this.isMissed = false;
-    this.lastCorrectTime = +new Date();
-  }
-
-  clearTyping() {
-    this.currentTyping = '';
-  }
-
-  onKeyPressed(key: string) {
-    this.currentTyping += key;
-
-    if (!this.expectedTranscription.startsWith(this.currentTyping)) {
-        this.clearTyping();
-        this.incorrectSubject.next('true');
-        return;
-    }
-
-    if (this.expectedTranscription === this.currentTyping) {
-        this.nextKanaSubject.next('true');
-    }
-  }
+  // setScore() {
+  //   let multiplier = this.isMissed ? 1 : 2;
+  //   let timestamp = (+(new Date()) - this.lastCorrectTime) / 1000;
+  //   let timescore = Math.round(1000 - (timestamp > 5 ? 1000 : timestamp * 200));
+  //   // to 1 s - 1000
+  //   this.score += (250 + timescore) * multiplier;
+  //   this.isMissed = false;
+  //   this.lastCorrectTime = +new Date();
+  // }
 
   startNewGame() {
-    this.currentKana = '';
-    this.currentTyping = '';
-    this.expectedTranscription = '';
+    this.currentSymbol.next({kana: '', transcription: ''});
+
     this.score = 0;
     this.isMissed = false;
     this.vacabulary = this.createVacabulary();
@@ -168,6 +145,25 @@ export class GameComponent implements OnInit, OnDestroy {
 
   ngOnDestroy() {
     this.subscriptions.forEach(s => s.unsubscribe());
+  }
+
+  getOptions(answer: { kana: string; transcription: string; }) {
+    if (!answer || !answer.kana) {
+      return;
+    }
+
+    const options = [answer.kana];
+    const symbols = Object.keys(this.vacabulary);
+    while (options.length < 4) {
+      const i = Math.round(Math.random() * (symbols.length - 1));
+      if (!options.includes(symbols[i])) {
+        options.push(symbols[i]);
+      }
+    }
+
+    shuffleArray(options);
+
+    return options;
   }
 
 }

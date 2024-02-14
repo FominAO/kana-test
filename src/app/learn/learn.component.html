@@ -1,0 +1,41 @@
+<div></div>
+<h3>Learn</h3>
+
+<div class="container">
+  <ng-container *ngIf="currentSymbol | async as currentSymbol">
+    <div
+      class="current-transcriptiion"
+      
+    >
+    <div class="animation"[@correct]="correctAnimationSubject | async"
+    (@correct.done)="onCorrectAnimationDone($event)"
+    [@incorrect]="incorrectAnimationSubject | async"
+    (@incorrect.done)="onIncorrectAnimationDone($event)">{{ currentSymbol.transcription }}</div>
+      
+    </div>
+
+    <div class="options">
+      <div
+        *ngFor="let option of currentOptions | async"
+        class="kana-option"
+        (click)="onSelectKana(option === currentSymbol.kana)"
+      >
+        {{ option }}
+      </div>
+    </div>
+  </ng-container>
+  <!-- <div
+    class="current-kana"
+    [@correct]="correctAnimationSubject | async"
+    (@correct.done)="onCorrectAnimationDone($event)"
+    [@incorrect]="incorrectAnimationSubject | async"
+    (@incorrect.done)="onIncorrectAnimationDone($event)"
+  >
+    {{ currentKana }}
+  </div> -->
+</div>
+<div class="counter">
+  <div>Kanas left: {{ queue.length }}</div>
+</div>
+<div>Score: {{ score }}</div>
+<button (click)="startNewGame()">Reset</button>
