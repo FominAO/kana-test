@@ -1,6 +1,3 @@
-export type AlphabetType = 'katakana' | 'hiragana' | 'kanji' | 'armenian';
-
-
 export type AlphabetConstructorElem = {
     upperCase: string,
     lowerCase: string,
@@ -16,6 +13,7 @@ export class Alphabet {
     constructor(alph: AlphabetConstructorElem[]) {
         this.init(alph);
     }
+
     init(alph: AlphabetConstructorElem[]) {
         alph.forEach(letter => {
             this.dictionary[letter.upperCase] = {
@@ -28,6 +26,7 @@ export class Alphabet {
             }
         })
     }
+
     getTranscription(letter: string) {
         if (this.dictionary[letter]?.transcription) {
             return this.dictionary[letter].transcription
@@ -35,6 +34,7 @@ export class Alphabet {
 
         return null
     }
+
     getLetterName(letter: string) {
         if (this.dictionary[letter]?.letterName) {
             return this.dictionary[letter].transcription

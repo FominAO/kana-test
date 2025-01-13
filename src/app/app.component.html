@@ -3,13 +3,20 @@
 <div class="controls">
     <div class="select">
         <label for="alphabet-select">Alphabet </label>
-        <select [(ngModel)]="selectedAlphabet" name="alphabet" id="alphabet-select">
+        <select [(ngModel)]="selectedAlphabet" name="alphabet" id="alphabet-select" multiple>
             <option value="katakana">Katakana</option>
             <option value="hiragana">Hiragana</option>
             <option value="kanji">Kanji (soon)</option>
         </select>
     </div>
-    <button class="start-button" [routerLink]="getLink()">Start</button>
+    <div class="gameMode">
+        <label for="mode-select">Game mode </label>
+        <select [(ngModel)]="selectedMode" name="mode" id="mode-select">
+            <option value="classic">Classic</option>
+            <option value="deathmatch">Death Match</option>
+        </select>
+    </div>
+    <button class="start-button" routerLink="game" [queryParams]="{mode: selectedMode, alph: selectedAlphabet}">Start</button>
     <button class="start-button" routerLink="">Home</button>
 </div>
 

@@ -24,10 +24,17 @@
 
 </div>
 <div class="counter">
-    <div>
+    <div *ngIf="gameMode === 'classic'">
       Kanas left: {{ queue.length }} <button (click)="onHint()">Hint</button
       ><span>{{ hint }}</span>
     </div>
+    <div *ngIf="gameMode === 'deathmatch'">
+      Kanas survived: {{ deathmatchCounter }} <span>It was: {{ hint }}</span>
+    </div>
   </div>
-  <div>Score: {{ score }}</div>
+  <div>Score: {{ score }} <span
+    class="score-add"
+    [@score]="scoreSubject | async"
+    (@score.done)="onScoreAnimationDone($event)"
+    ><span *ngIf="lastAddScore !== 0">+{{lastAddScore}}</span></span></div>
   <button (click)="startNewGame()">Reset</button>

@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { AlphabetType } from './kana/type';
+import { AlphabetsEnum } from './kana/alphabets.enum';
+import { GameMode } from './kana/game-mode.enum';
 
 @Component({
   selector: 'app-root',
@@ -9,12 +10,9 @@ import { AlphabetType } from './kana/type';
 })
 export class AppComponent {
   title = 'kana-test';
-  selectedAlphabet: AlphabetType = 'hiragana';
+  selectedAlphabet = AlphabetsEnum.Hiragana;
+  selectedMode = GameMode.Classic;
 
   constructor(private readonly route: ActivatedRoute) {
-  }
-
-  getLink():string {
-    return `game/${this.selectedAlphabet}`
   }
 }

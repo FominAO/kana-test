@@ -1,14 +1,15 @@
-import { Component, Inject, OnDestroy, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { animate, state, style, transition, trigger } from '@angular/animations';
-import { BehaviorSubject, Observable, Subject, Subscription, combineLatest, of, timer } from 'rxjs';
-import { filter, map, tap } from 'rxjs/operators'
+import { BehaviorSubject, Observable, Subscription } from 'rxjs';
+import { filter } from 'rxjs/operators'
 import { GlobalEventsService } from '../services/global-events.service';
-import { Alphabet, AlphabetType } from '../kana/type';
+import { Alphabet } from '../kana/type';
 import { shuffleArray } from 'src/utils/shuffle-array';
-import { armenianAlphabet } from '../kana/armenian';
-import { hiraganaAlphabet } from '../kana/hiragana';
-import { katakanaAlphabet } from '../kana/katakana';
-import { ActivatedRoute, ActivatedRouteSnapshot } from '@angular/router';
+import { ActivatedRoute } from '@angular/router';
+import { Alphabets } from '../kana/alphabets';
+import { AlphabetsEnum } from '../kana/alphabets.enum';
+import { GameMode } from '../kana/game-mode.enum';
+import { getRandomIndex } from 'src/utils/random';
 
 @Component({
   selector: 'app-game',
@@ -56,11 +57,31 @@ import { ActivatedRoute, ActivatedRouteSnapshot } from '@angular/router';
             transition('* => false', animate('0ms')),
             transition('* => true', animate('150ms'))
         ],
+    ),
+    trigger(
+        'score', [
+            state(
+                'false', 
+                style({
+                    transform: 'scale(1)',
+                    opacity: '0'
+                })
+            ),
+            state(
+                'true',
+                style({
+                    transform: 'scale(1.2)',
+                    opacity: '1'
+                })
+            ),
+            transition('* => false', animate('300ms')),
+            transition('* => true', animate('100ms'))
+        ],
     )
   ]
 })
 export class GameComponent implements OnInit, OnDestroy {
-    alphabets: Array<AlphabetType> = [];
+    alphabets: Array<AlphabetsEnum> = [];
 
     keyPressed$: Observable<KeyboardEvent>;
 
@@ -72,11 +93,16 @@ export class GameComponent implements OnInit, OnDestroy {
     lastCorrectTime = 0;
     score = 0;
     hint = '';
+    lastAddScore = 0;
+    gameMode: GameMode = GameMode.Classic;
+
+    deathmatchCounter = 0;
 
     vacabulary:{[key: string]: string} = {}
 
     nextKanaSubject = new BehaviorSubject('false');
     incorrectSubject = new BehaviorSubject('false');
+    scoreSubject = new BehaviorSubject('false');
     supportsTouch = false;
 
     subscriptions: Subscription[] = [];
@@ -85,13 +111,17 @@ export class GameComponent implements OnInit, OnDestroy {
   constructor(private eventsService: GlobalEventsService, private readonly activatedRoute: ActivatedRoute) {
     this.supportsTouch = 'ontouchstart' in window || (navigator as any).msMaxTouchPoints;
     this.keyPressed$ = this.eventsService.getKeyPressedObservable()
-    this.activatedRoute.params.subscribe(e => console.log(e));
+    this.activatedRoute.queryParams.subscribe(params => {
+      console.log(params);
+      
+      this.alphabets = typeof params.alph === 'string' ? [params.alph] : params.alph;
+      this.gameMode = params.mode;
+      this.startNewGame();
+    });
 
-    this.alphabets = [this.activatedRoute.snapshot.params.alph]; 
   }
 
   onMobileInputChange(e: Event) {
-    console.log(e);
     e.preventDefault();
     e.stopPropagation();
 
@@ -102,28 +132,7 @@ export class GameComponent implements OnInit, OnDestroy {
   }
 
   createVacabulary() {
-    let vocab = {};
-
-    this.alphabets.forEach(alphabet => {
-        switch (alphabet) {
-            case 'hiragana':
-                vocab = {...vocab, ...(new Alphabet(hiraganaAlphabet).getAllTranscriptions())};
-                break;
-            case 'katakana':
-                vocab = {...vocab, ...(new Alphabet(katakanaAlphabet).getAllTranscriptions())};
-                break;
-            case 'armenian':
-                vocab = {...vocab, ...(new Alphabet(armenianAlphabet).getAllTranscriptions())}
-                break;
-            default:
-                if (Object.keys(vocab).length === 0) {
-                    console.warn(`No matches for alphabet "${alphabet}"`);
-                }
-                break;
-        }
-    });
-
-    return vocab;
+    return this.alphabets.reduce((v, alphabet) => ({...v, ...(new Alphabet(Alphabets[alphabet]).getAllTranscriptions())}), {})
   }
 
   ngOnInit(): void {
@@ -147,6 +156,13 @@ export class GameComponent implements OnInit, OnDestroy {
           this.incorrectSubject.next('false');
       }
   }
+
+  onScoreAnimationDone(e: any) {
+      if (e.fromState === 'false') {
+          this.scoreSubject.next('false');
+      }
+  }
+
   onHint() {
     this.hint = this.vacabulary[this.currentKana];
   }
@@ -157,25 +173,55 @@ export class GameComponent implements OnInit, OnDestroy {
     }
     this.hint = '';
     this.clearTyping();
-    this.currentKana = this.queue.pop() || '';
+    
+    switch (this.gameMode) {
+      case GameMode.DeathMatch:
+        this.changeKanaDeathMatch();
+        break;
+
+      default:
+        this.changeKanaClassic();
+        break;
+    }
     if (this.currentKana === '') {
         return;
     }
     this.expectedTranscription = this.vacabulary[this.currentKana];
   }
 
+  changeKanaDeathMatch() {
+    this.currentKana = this.queue[getRandomIndex(this.queue.length)];
+  }
+
+  changeKanaClassic() {
+    this.currentKana = this.queue.pop() || '';
+  }
+
   setScore() {
+    this.deathmatchCounter++;
     let multiplier = this.isMissed ? 1 : 2;
     let timestamp = (+(new Date()) - this.lastCorrectTime) / 1000;
     let timescore = Math.round(1000 - (timestamp > 5 ? 1000 : timestamp * 200));
     // to 1 s - 1000
-    this.score += (250 + timescore) * multiplier;
+    this.lastAddScore = (250 + timescore) * multiplier;
+    if (this.lastAddScore > 0) {
+      this.scoreSubject.next('true');
+    }
+    this.score += this.lastAddScore;
     this.isMissed = false;
     this.lastCorrectTime = +new Date();
   }
 
   clearTyping() {
     this.currentTyping = '';
+  }
+  
+  deathMatchEnd() {
+    this.queue = [];
+    this.hint = this.vacabulary[this.currentKana];
+    this.currentKana = '';
+    
+    return;
   }
 
   onKeyPressed(key: string) {
@@ -184,6 +230,10 @@ export class GameComponent implements OnInit, OnDestroy {
     if (!this.expectedTranscription.startsWith(this.currentTyping)) {
         this.clearTyping();
         this.incorrectSubject.next('true');
+        this.isMissed = true;
+        if (this.gameMode === GameMode.DeathMatch) {
+          this.deathMatchEnd();
+        }
         return;
     }
 
@@ -197,8 +247,10 @@ export class GameComponent implements OnInit, OnDestroy {
     this.currentTyping = '';
     this.expectedTranscription = '';
     this.score = 0;
+    this.lastAddScore = 0;
     this.isMissed = false;
     this.vacabulary = this.createVacabulary();
+    
     this.queue = Object.keys(this.vacabulary);
     shuffleArray(this.queue);
     
